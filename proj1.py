@@ -29,7 +29,7 @@ def h_proj1(state, fline, walls):
     """
     global g_fline, g_walls
     if fline != g_fline or walls != g_walls or grid == []:
-        edist_grid(fline, walls)
+        bfs(fline, walls)
     ((x,y),(u,v)) = state
     hval = float(grid[x][y])
     
@@ -54,69 +54,48 @@ def bfs(fline, walls):
     global grid, g_fline, g_walls, xmax, ymax
     xmax = max([max(x,x1) for ((x,y),(x1,y1)) in walls])
     ymax = max([max(y,y1) for ((x,y),(x1,y1)) in walls])
-    grid = deque([[infinity]*xmax]*ymax)
+    grid = [[infinity]*(ymax+1)]*(xmax+1)
     ((x1,y1),(x2,y2)) = fline
-    frontier =[]
+    frontier = deque([])
     if x1 == x2:
         for y3 in range(min(y1,y2),max(y1,y2)+1):
             grid[x1][y3] = 0
             for n in range(max(0,y3-1),min(ymax+1,y3+2)):
                 for m in range(max(0,x1-1),min(xmax+1,x1+2)):
-                    if frontier.count((m,n)) == 0 and grid[m,n] == infinity:
+                    if frontier.count((m,n)) == 0 and grid[m][n] == infinity:
                         frontier.append((m,n))
     else: 
         for x3 in range(min(x1,x2),max(x1,x2)+1):
             grid[x3][y1] = 0
             for n in range(max(0,y1-1),min(ymax+1,y1+2)):
                 for m in range(max(0,x3-1),min(xmax+1,x3+2)):
-                    if frontier.count((m,n)) == 0 and grid[m,n] == infinity:
+                    if frontier.count((m,n)) == 0 and grid[m][n] == infinity:
                         frontier.append((m,n))
-    while frontier != []:
+    while frontier:
         (v1,v2) = frontier.popleft()
         grid[v1][v2] = edistw_to_finish((v1,v2),fline,walls)
         if grid[v1][v2] == infinity:
-            d = []
+            
             for g in range(max(0,v1-1),min(xmax+1,v1+2)):
                 for h in range(max(0,v2-1),min(ymax+1,v2+2)):
-                    d.append(grid[g][h])
-            d.append(infinity)
-            
-
+                    if grid[g][h] != infinity and not racetrack.crash(((v1,v2),(g,h)),walls):
+                        if g == v1 or h == v2:
+                                d = grid[g][h] + 1
+                        else:
+                                
+                                d = grid[g][h] + 1.4142135623730951
+                        if d < grid[v1][v2]:
+                                grid[v1][v2] = d
+                        
         for i in range(max(0,v1-1),min(xmax+1,v1+2)):
                 for j in range(max(0,v2-1),min(ymax+1,v2+2)):
-                    if frontier.count((m,n)) == 0 and grid[m,n] == infinity:
+                    if frontier.count((i,j)) == 0 and grid[i][j] == infinity:
                         frontier.append((i,j))
-    
-    ##my 
-def edist_grid(fline,walls):
-    global grid, g_fline, g_walls, xmax, ymax
-    xmax = max([max(x,x1) for ((x,y),(x1,y1)) in walls])
-    ymax = max([max(y,y1) for ((x,y),(x1,y1)) in walls])
-    grid = [[edistw_to_finish((x,y), fline, walls) for y in range(ymax+1)] for x in range(xmax+1)]
-    flag = True
-    print('computing edist grid', end=' '); sys.stdout.flush()
-    while flag:
-        print('.', end=''); sys.stdout.flush()
-        flag = False
-        for x in range(xmax+1):
-            for y in range(ymax+1):
-                for y1 in range(max(0,y-1),min(ymax+1,y+2)):
-                    for x1 in range(max(0,x-1),min(xmax+1,x+2)):
-                        if grid[x1][y1] != infinity and not racetrack.crash(((x,y),(x1,y1)),walls):
-                            if x == x1 or y == y1:
-                                d = grid[x1][y1] + 1
-                            else:
-                                # In principle, it seems like a taxicab metric should be just as
-                                # good, but Euclidean seems to work a little better in my tests.
-                                d = grid[x1][y1] + 1.4142135623730951
-                            if d < grid[x][y]:
-                                grid[x][y] = d
-                                flag = True
-    print(' done')
     g_fline = fline
     g_walls = walls
     return grid
-
+    ##my 
+    
 
 def edistw_to_finish(point, fline, walls):
     """
