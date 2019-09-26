@@ -6,6 +6,8 @@
 import math, racetrack
 import sys
 
+from collections import deque
+
 # borrowing heuristics'
 infinity = float('inf')     # alternatively, we could import math.inf
 
@@ -13,7 +15,7 @@ infinity = float('inf')     # alternatively, we could import math.inf
 g_fline = False
 g_walls = False
 grid = []
-grids = []
+
 
 def h_proj1(state, fline, walls):
     """
@@ -47,7 +49,45 @@ def h_proj1(state, fline, walls):
         penalty += math.sqrt(au**2 + av**2)
     hval = max(hval+penalty,sd)
     return hval
+##my
+def bfs(fline, walls):
+    global grid, g_fline, g_walls, xmax, ymax
+    xmax = max([max(x,x1) for ((x,y),(x1,y1)) in walls])
+    ymax = max([max(y,y1) for ((x,y),(x1,y1)) in walls])
+    grid = deque([[infinity]*xmax]*ymax)
+    ((x1,y1),(x2,y2)) = fline
+    frontier =[]
+    if x1 == x2:
+        for y3 in range(min(y1,y2),max(y1,y2)+1):
+            grid[x1][y3] = 0
+            for n in range(max(0,y3-1),min(ymax+1,y3+2)):
+                for m in range(max(0,x1-1),min(xmax+1,x1+2)):
+                    if frontier.count((m,n)) == 0 and grid[m,n] == infinity:
+                        frontier.append((m,n))
+    else: 
+        for x3 in range(min(x1,x2),max(x1,x2)+1):
+            grid[x3][y1] = 0
+            for n in range(max(0,y1-1),min(ymax+1,y1+2)):
+                for m in range(max(0,x3-1),min(xmax+1,x3+2)):
+                    if frontier.count((m,n)) == 0 and grid[m,n] == infinity:
+                        frontier.append((m,n))
+    while frontier != []:
+        (v1,v2) = frontier.popleft()
+        grid[v1][v2] = edistw_to_finish((v1,v2),fline,walls)
+        if grid[v1][v2] == infinity:
+            d = []
+            for g in range(max(0,v1-1),min(xmax+1,v1+2)):
+                for h in range(max(0,v2-1),min(ymax+1,v2+2)):
+                    d.append(grid[g][h])
+            d.append(infinity)
+            
 
+        for i in range(max(0,v1-1),min(xmax+1,v1+2)):
+                for j in range(max(0,v2-1),min(ymax+1,v2+2)):
+                    if frontier.count((m,n)) == 0 and grid[m,n] == infinity:
+                        frontier.append((i,j))
+    
+    ##my 
 def edist_grid(fline,walls):
     global grid, g_fline, g_walls, xmax, ymax
     xmax = max([max(x,x1) for ((x,y),(x1,y1)) in walls])
