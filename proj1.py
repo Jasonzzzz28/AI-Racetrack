@@ -20,7 +20,10 @@ grid = []
 def print2d(a):
     for i in range(len(a)):
         for j in range(len(a[i])):
-            print(a[i][j], end=' ')
+            if a[i][j] != infinity:
+                print(int(a[i][j]), end=' ')
+            else:
+                print("f",end=' ')
         print()
 
 
@@ -94,15 +97,12 @@ def bfs(fline, walls):
     while frontier:
         (v1, v2) = frontier.popleft()
         visited.append((v1,v2))
-        temp = edistw_to_finish((v1, v2), fline, walls)
+        grid[v1][v2] = edistw_to_finish((v1, v2), fline, walls)
         ##print (frontier)
         ##print()
         ##print(temp)
-        ##print(v1,v2)
-        if grid[v1][v2] != infinity and temp == grid[v1][v2]:
-            flag = False
-        else:
-            grid[v1][v2] = temp
+        ##print2d(grid)
+        ##print()
 
         if grid[v1][v2] == infinity:
 
@@ -116,12 +116,13 @@ def bfs(fline, walls):
                             d = grid[g][h] + 1.4142135623730951
                         if d < grid[v1][v2]:
                             grid[v1][v2] = d
-                            flag = True
-
-        for i in range(max(0, v1 - 1), min(xmax + 1, v1 + 2)):
-            for j in range(max(0, v2 - 1), min(ymax + 1, v2 + 2)):
-                if frontier.count((i, j)) == 0 and visited.count((i,j))==0: ##and grid[i][j] == infinity:
-                    frontier.append((i, j))
+        print(v1,v2,grid[v1][v2])
+        print()
+        if grid[v1][v2] != infinity:
+            for i in range(max(0, v1 - 1), min(xmax + 1, v1 + 2)):
+                for j in range(max(0, v2 - 1), min(ymax + 1, v2 + 2)):
+                    if frontier.count((i, j)) == 0 and visited.count((i,j))==0: ##and grid[i][j] == infinity:
+                        frontier.append((i, j))
     print2d(grid)
 
     g_fline = fline
