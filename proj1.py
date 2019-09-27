@@ -26,6 +26,18 @@ def print2d(a):
                 print("f",end=' ')
         print()
 
+def listfl(a):
+    ((x1, y1), (x2, y2)) = a
+    res = []
+    if x1 == x2:
+        for y3 in range(min(y1, y2), max(y1, y2) + 1):
+            res.append((x1, y3))
+
+    else:
+        for x3 in range(min(x1, x2), max(x1, x2) + 1):
+            res.append((x3, y1))
+    return res
+
 
 def h_proj1(state, fline, walls):
     """
@@ -41,7 +53,12 @@ def h_proj1(state, fline, walls):
     if fline != g_fline or walls != g_walls or grid == []:
         bfs(fline, walls)
     ((x, y), (u, v)) = state
+    ((h1, w1),(h2, w2)) = fline
+    li = listfl(fline)
     hval = float(grid[x][y])
+
+   ## if li.count((x,y))>0 and u == 0 and v == 0:
+        
 
     # add a small penalty to favor short stopping distances
     au = abs(u)
@@ -58,7 +75,17 @@ def h_proj1(state, fline, walls):
     sy = y + sdv
     if racetrack.crash([(x, y), (sx, sy)], walls):
         penalty += math.sqrt(au ** 2 + av ** 2)
-    hval = max(hval + penalty, sd)
+
+
+    if li.count((sx,sy)) >0:
+        penalty = -sd
+    elif li.count((h1,sy))>0 or li.count((h2,sy))>0 or li.count((sx,w1))>0 or li.count((h1,w2))>0:
+        penalty -= sd/10.0
+
+    hval += penalty
+    #hval = max(hval + penalty, sd)
+
+
     return hval
 
 
@@ -92,7 +119,6 @@ def bfs(fline, walls):
                 for m in range(max(0, x3 - 1), min(xmax + 1, x3 + 2)):
                     if frontier.count((m, n)) == 0 and grid[m][n] == infinity:
                         frontier.append((m, n))
-    flag = True
 
     while frontier:
         (v1, v2) = frontier.popleft()
@@ -123,7 +149,6 @@ def bfs(fline, walls):
                 for j in range(max(0, v2 - 1), min(ymax + 1, v2 + 2)):
                     if frontier.count((i, j)) == 0 and visited.count((i,j))==0: ##and grid[i][j] == infinity:
                         frontier.append((i, j))
-    print2d(grid)
 
     g_fline = fline
     g_walls = walls
