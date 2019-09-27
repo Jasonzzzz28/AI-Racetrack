@@ -16,6 +16,11 @@ g_fline = False
 g_walls = False
 grid = []
 
+def print2d(a):
+    for i in range(len(a)):
+    	for j in range(len(a[i])):
+        	print(a[i][j], end=' ')
+    	print()
 
 def h_proj1(state, fline, walls):
     """
@@ -52,8 +57,8 @@ def h_proj1(state, fline, walls):
 ##my
 def bfs(fline, walls):
     global grid, g_fline, g_walls, xmax, ymax
-    xmax = max([max(x,x1) for ((x,y),(x1,y1)) in walls])
-    ymax = max([max(y,y1) for ((x,y),(x1,y1)) in walls])
+    xmax = max([max(x,x0) for ((x,y),(x0,y0)) in walls])
+    ymax = max([max(y,y0) for ((x,y),(x0,y0)) in walls])
     grid = [[infinity]*(ymax+1)]*(xmax+1)
     ((x1,y1),(x2,y2)) = fline
     frontier = deque([])
@@ -98,6 +103,8 @@ def bfs(fline, walls):
                 for j in range(max(0,v2-1),min(ymax+1,v2+2)):
                     if frontier.count((i,j)) == 0 and grid[i][j] == infinity:
                         frontier.append((i,j))
+    print2d(grid)
+
     g_fline = fline
     g_walls = walls
     return grid
