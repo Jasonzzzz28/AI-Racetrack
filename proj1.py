@@ -71,9 +71,15 @@ def bfs(fline, walls):
                 for m in range(max(0,x3-1),min(xmax+1,x3+2)):
                     if frontier.count((m,n)) == 0 and grid[m][n] == infinity:
                         frontier.append((m,n))
-    while frontier:
+    flag = True
+    while frontier and flag:
         (v1,v2) = frontier.popleft()
-        grid[v1][v2] = edistw_to_finish((v1,v2),fline,walls)
+        temp = edistw_to_finish((v1,v2),fline,walls)
+        if grid[v1][v2] != infinity and temp == grid[v1][v2]:
+            flag = False
+        else: 
+            grid[v1][v2] = temp
+
         if grid[v1][v2] == infinity:
             
             for g in range(max(0,v1-1),min(xmax+1,v1+2)):
@@ -86,6 +92,7 @@ def bfs(fline, walls):
                                 d = grid[g][h] + 1.4142135623730951
                         if d < grid[v1][v2]:
                                 grid[v1][v2] = d
+                                flag = True
                         
         for i in range(max(0,v1-1),min(xmax+1,v1+2)):
                 for j in range(max(0,v2-1),min(ymax+1,v2+2)):
