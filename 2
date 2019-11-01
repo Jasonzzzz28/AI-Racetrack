@@ -1,22 +1,28 @@
-def main(s, f, w):
-    """
-    File: proj2.py
-    """
 
-    import racetrack_example as racetrack
-    import math
-    import sys
-    import json
-    from collections import deque
 
-    # global variables
-    infinity = float('inf')
-    negainfinity = float('-inf')
-    g_fline = False
-    g_walls = False
-    grid = []
-    find = False  # check if it already finds a path to the fline
+import racetrack_example as racetrack
+import math
+import sys
+import json
+from collections import deque
 
+# global variables
+infinity = float('inf')
+negainfinity = float('-inf')
+g_fline = False
+g_walls = False
+grid = []
+find = False  # check if it already finds a path to the fline
+
+    def initialize(state, fline, walls):
+        """
+        Call edist_grid to initialize the grid for h_walldist, then write the data, in
+        json format, to the file "data.txt" so it won't be lost when the process exits
+        """
+        bfs(fline, walls)
+        data_file = open('data.txt', 'w')
+        json.dump(grid, data_file)
+        data_file.close()
 
     # Your proj2 function
     def main(state, finish, walls):
@@ -31,9 +37,7 @@ def main(s, f, w):
 
         # Take the new version of h_walldist, which needs the grid as a 4th argument, and
         # translate it into the three-argument function needed by rt.main
-        h = lambda state, fline, walls: h_proj1(state, fline, walls, grid)
-
-
+        # h = lambda state, fline, walls: h_proj1(state, fline, walls, grid)
 
         # if edist_to_line((x, y), finish) <= 1 and abs(u) <= 2 and abs(v) <= 2:
         #     velocity = (0, 0)
@@ -50,24 +54,50 @@ def main(s, f, w):
         #             break
         # # need to flush because Python uses buffered output
         # print(velocity, file=choices_file, flush=True)
+        res = (u, v)
+        cost = infinity
+        for m in range(u - 2, u + 3):
+            for n in range(v - 2, v + 3):
+                ns = ((x, y), (m, n))
+                value = LDabSearch(ns, finish, walls, 2, negainfinity, infinity, False)
+                if value < cost: res = (m, n)
+        print(res, file=choices_file, flush=True)
+
+    # def LDABchoice(state, depth):            for m in range(u - 2, u + 3):
+    #                                         for n in range(v - 2, v + 3):
+
+   
+    def LDabSearch(state, fline, walls, d, a, b, mx):
+        if d == 0:
+            return h_proj1(state, fline, walls)
+        if h_proj1(state, fline, walls) == negainfinity:
+            return negainfinity
+        ((x, y), (u, v)) = state
+        if mx:
+            cost = negainfinity
+            for i in range(x - 1, x + 2):
+                for j in range(y - 1, y + 2):
+                    newS = ((i, j), (u, v))
+                    cost = max(cost, LDabSearch(newS, fline, walls, d - 1, a, b, False))
+                    if cost >= b:
+                        return cost
+                    else:
+                        a = max(a, cost)
+            return cost
+        else:
+            cost = infinity
+            for m in range(u - 2, u + 3):
+                for n in range(v - 2, v + 3):
+                    news = ((x + m, y + n), (m, n))
+                    cost = min(cost, LDabSearch(news, fline, walls, d - 1, a, b, True))
+                    if cost <= a:
+                        return cost
+                    else:
+                        b = min(b, cost)
+            print(cost)
+            return cost
 
 
-    def LDabSearch(state, d, a, b):
-
-
-
-
-
-
-    def initialize(state, fline, walls):
-        """
-        Call edist_grid to initialize the grid for h_walldist, then write the data, in
-        json format, to the file "data.txt" so it won't be lost when the process exits
-        """
-        bfs(fline, walls)
-        data_file = open('data.txt', 'w')
-        json.dump(grid, data_file)
-        data_file.close()
 
     def h_proj1(state, fline, walls):
         """
@@ -84,12 +114,17 @@ def main(s, f, w):
         if find:
             return infinity
 
-        if fline != g_fline or walls != g_walls or grid == []:
-            bfs(fline, walls)
+        # if fline != g_fline or walls != g_walls or grid == []:
+        #     bfs(fline, walls)
+
+        data_file = open('data.txt', 'r')
+        gd = json.load(data_file)
+        data_file.close()
+
         ((x, y), (u, v)) = state
         ((h1, w1), (h2, w2)) = fline
         li = listfl(fline)
-        hval = float(grid[x][y])
+        hval = float(gd[x][y])
 
         au = abs(u)
         av = abs(v)
@@ -129,7 +164,7 @@ def main(s, f, w):
             # check if the slowest stop point land on the fline
             # if yes, significantly reduce the return cost
             if li.count((ssx, ssy)) > 0:
-                return (-100) * (grid[x][y] + math.sqrt(ssu ** 2 + ssv ** 2))
+                return (-100) * (gd[x][y] + math.sqrt(ssu ** 2 + ssv ** 2))
             # check if the slowest stopping x or y point is on the fline and reduce the return cost
             elif li.count((h1, ssy)) > 0 or li.count((h2, ssy)) > 0 or li.count((ssx, w1)) > 0 or li.count(
                     (ssx, w2)) > 0:
@@ -248,6 +283,3 @@ def main(s, f, w):
             for x3 in range(min(x1, x2), max(x1, x2) + 1):
                 res.append((x3, y1))
         return res
-
-
-
