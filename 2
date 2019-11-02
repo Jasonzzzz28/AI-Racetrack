@@ -48,54 +48,68 @@ def main(state, finish, walls):
     data2 = open('data2.txt', 'r')
     frontier = json.load(data2)
     data2.close()
-    mark = False
-    length = len(frontier)
-    if length >= 3:
-        (c1, somen) = frontier[2]
-        (c2, n1) = frontier[1]
-        print(frontier[0])
-        (somec, n2) = frontier[0]
-        frontier[0] = frontier[1]
-        frontier[1] = frontier[2]
-        mark = True
 
     res = (u, v)
     cost = infinity
+    print("res is ")
+    print(res)
     global xm, ym
     xm = max([max(x, x0) for ((x, y), (x0, y0)) in walls])
     ym = max([max(y, y0) for ((x, y), (x0, y0)) in walls])
     for m in range(u - 2, u + 3):
         for n in range(v - 2, v + 3):
             ns = ((x + m, y + n), (m, n))
-            value = LDabSearch(ns, finish, walls, 2, negainfinity, infinity, True)
+            print("visited ")
+            print((m,n))
+
+            value = LDabSearch(ns, finish, walls, 1, negainfinity, infinity, True)
+            print(value)
             # print((x + m, x + n))
             # print(value)
             if value < cost:
-                if mark:
-                    if (c1, n1) == (c2, n2):
-                        break
-                cost = value
-                res = (m, n)
+                (oppx,oppy) = oppChoice(ns, finish, walls)
+
+                if not [oppx,oppy] in frontier and not [x+m,y+n] in frontier:
+                    cost = value
+                    res = (m, n)
+                else:
+                    print("removed")
+                    print ((m,n))
 
     cyclecheck = open('data2.txt', 'w')
-
-    frontier.append(((u, v), res))
+    (i, j) = res
+    k = (x, y)
+    newstate = (x+i, y+j)
+    if not [x,y] in frontier:
+        frontier.append(k)
+    if not [x+i,y+j] in frontier:
+        frontier.append(newstate)
     json.dump(frontier, cyclecheck)
     cyclecheck.close()
+    #print(cost)
 
     print(res, file=choices_file, flush=True)
 
-
-# def LDABchoice(state, depth):            for m in range(u - 2, u + 3):
-#                                         for n in range(v - 2, v + 3):
+def oppChoice(state, fline, walls):
+    ((x, y), (u, v)) = state
+    choice = (x,y)
+    cost = negainfinity
+    for i in range(x - 1, x + 2):
+        for j in range(y - 1, y + 2):
+            newS = ((i, j), (u, v))
+            nc = h_opp(newS, fline, walls)
+            if nc > cost:
+                cost = nc
+                choice = (i,j)
+    return choice
 
 
 def LDabSearch(state, fline, walls, d, a, b, mx):
     ((x, y), (u, v)) = state
     if x < 0 or x > xm or y < 0 or y > ym: return infinity
     if d == 0:
-        return h_proj1(state, fline, walls)
-    if h_proj1(state, fline, walls) == negainfinity:
+        return h_opp(state, fline, walls)
+    if h_opp(state, fline, walls) == negainfinity:
         return negainfinity
 
     if mx:
@@ -105,6 +119,7 @@ def LDabSearch(state, fline, walls, d, a, b, mx):
                 newS = ((i, j), (u, v))
                 cost = max(cost, LDabSearch(newS, fline, walls, d - 1, a, b, False))
                 if cost >= b:
+                    print ("AB PRUNE")
                     return cost
                 else:
                     a = max(a, cost)
@@ -138,8 +153,9 @@ def h_proj1(state, fline, walls):
     global g_fline, g_walls, find
 
     # if it has already found a solution path, stop exploring other nodes
-    if find:
-        return infinity
+
+    # if find:
+    #     return infinity
 
     # if fline != g_fline or walls != g_walls or grid == []:
     #     bfs(fline, walls)
@@ -171,13 +187,36 @@ def h_proj1(state, fline, walls):
         return negainfinity
 
     # add a small penalty to favor short stopping distances
-    penalty = sd / 10.0
+    penalty = sd
 
     # compute location after fastest stop, and add a penalty if it goes through a wall
+
+    # for i in range(u - 1, u + 2):
+    #     for j in range(v - 1, v + 2):
+    #         ai = abs(i)
+    #         aj = abs(j)
+    #         sdi = ai * (ai - 1) / 2.0
+    #         sdj = aj * (aj - 1) / 2.0
+    #         if i < 0: sdi = -sdi
+    #         if j < 0: sdj = -sdj
+    #         si = x + sdi
+    #         sj = y + sdj
+    #         if racetrack.crash([(x, y), (si, sj)], walls):
+    #             return infinity
+    #             penalty += 2 * math.sqrt(au ** 2 + av ** 2)
+
     if racetrack.crash([(x, y), (sx, sy)], walls):
-        penalty += 3 * math.sqrt(au ** 2 + av ** 2)
+
+        penalty += 10 * math.sqrt(au ** 2 + av ** 2)
     else:
         penalty -= sd / 10.0
+
+    fx = x
+    fy = y
+    for p in range(fx - 1, fx + 2):
+        for q in range(fy - 1, fy + 2):
+            if racetrack.crash([(fx, fy), (p, q)], walls):
+                return infinity
 
     # compute the slowest stopping distance
     ssu = (au - 2) * (au - 1) / 2.0
@@ -333,3 +372,71 @@ def listfl(a):
             res.append((x3, y1 - 1))
             res.append((x3, y1 + 1))
     return res
+
+def h_opp(state, fline, walls):
+    """
+    The first time this function is called, it will use optimized breath first search to find the cost for all the
+    points on the grid.
+    On all subsequent calls, this function will retrieve the cached value and add an
+    estimate of how long it will take to stop.
+    :param a: state, fline, walls
+    :return: estimate cost of the step
+    """
+    global g_fline, g_walls, find
+
+    # if it has already found a solution path, stop exploring other nodes
+    # if find:
+    #     return infinity
+
+    if fline != g_fline or walls != g_walls or grid == []:
+        bfs(fline, walls)
+    ((x, y), (u, v)) = state
+    ((h1, w1), (h2, w2)) = fline
+    li = listfl(fline)
+    hval = float(grid[x][y])
+
+    au = abs(u)
+    av = abs(v)
+    sdu = au * (au - 1) / 2.0
+    sdv = av * (av - 1) / 2.0
+    sd = max(sdu, sdv)
+
+    if u < 0: sdu = -sdu
+    if v < 0: sdv = -sdv
+    sx = x + sdu
+    sy = y + sdv
+
+    # check if it has already found a solution path
+    # if yes, stop exploring other nodes
+    if li.count((x, y)) > 0 and u == 0 and v == 0:
+        return negainfinity
+
+    # add a small penalty to favor short stopping distances
+    penalty = sd
+
+    # compute location after stop, and add a penalty if it goes through a wall
+    if racetrack.crash([(x, y), (sx, sy)], walls):
+        penalty += math.sqrt(au ** 2 + av ** 2)
+    else:
+        penalty -= sd / 10.0
+
+    # compute the slowest stopping distance
+    ssu = (au - 2) * (au - 1) / 2.0
+    ssv = (av - 2) * (av - 1) / 2.0
+    if u < 0: ssu = -ssu
+    if v < 0: ssv = -ssv
+    ssx = x + ssu
+    ssy = y + ssv
+
+    if not racetrack.crash([(x, y), (ssx, ssy)], walls):
+        # check if the slowest stop point land on the fline
+        # if yes, significantly reduce the return cost
+        if li.count((ssx, ssy)) > 0:
+            return (-100) * (grid[x][y] + math.sqrt(ssu ** 2 + ssv ** 2))
+        # check if the slowest stopping x or y point is on the fline and reduce the return cost
+        elif li.count((h1, ssy)) > 0 or li.count((h2, ssy)) > 0 or li.count((ssx, w1)) > 0 or li.count((ssx, w2)) > 0:
+            penalty -= sd / 10.0
+
+    hval += penalty
+
+    return hval
