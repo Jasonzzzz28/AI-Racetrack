@@ -79,8 +79,8 @@ def main(state, finish, walls):
     (i, j) = res
     k = (x, y)
     newstate = (x + i, y + j)
-    # if not [x, y] in frontier:
-    #     frontier.append(k)
+    if not [x, y] in frontier:
+        frontier.append(k)
     if not [x + i, y + j] in frontier:
         frontier.append(newstate)
     json.dump(frontier, cyclecheck)
