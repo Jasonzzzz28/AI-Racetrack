@@ -60,39 +60,54 @@ def main(state, finish, walls):
         for n in range(v - 2, v + 3):
             ns = ((x + m, y + n), (m, n))
             print("visited ")
-            print((m,n))
+            print((m, n))
 
             value = LDabSearch(ns, finish, walls, 1, negainfinity, infinity, True)
             print(value)
-            # print((x + m, x + n))
-            # print(value)
             if value < cost:
-                (oppx,oppy) = oppChoice(ns, finish, walls)
+                (oppx, oppy) = oppChoice(ns, finish, walls)
 
-                if not [oppx,oppy] in frontier and not [x+m,y+n] in frontier:
+                if not oppcrashcheck((x, y), (x + m, y + n), walls) \
+                        and not [oppx, oppy] in frontier and not [x + m, y + n] in frontier:
                     cost = value
                     res = (m, n)
                 else:
                     print("removed")
-                    print ((m,n))
+                    print((m, n))
 
     cyclecheck = open('data2.txt', 'w')
     (i, j) = res
     k = (x, y)
-    newstate = (x+i, y+j)
-    if not [x,y] in frontier:
-        frontier.append(k)
-    if not [x+i,y+j] in frontier:
+    newstate = (x + i, y + j)
+    # if not [x, y] in frontier:
+    #     frontier.append(k)
+    if not [x + i, y + j] in frontier:
         frontier.append(newstate)
     json.dump(frontier, cyclecheck)
     cyclecheck.close()
-    #print(cost)
 
     print(res, file=choices_file, flush=True)
 
+
+def onfline(state, fline):
+    li = listfl(fline)
+    if li.count(state): return True
+    return False
+
+
+def oppcrashcheck(prev, state, walls):
+    (x1, y1) = prev
+    (x2, y2) = state
+    for i in range(x2 - 1, x2 + 2):
+        for j in range(y2 - 1, y2 + 2):
+            if racetrack.crash([(x1, y1), (i, j)], walls):
+                return True
+    return False
+
+
 def oppChoice(state, fline, walls):
     ((x, y), (u, v)) = state
-    choice = (x,y)
+    choice = (x, y)
     cost = negainfinity
     for i in range(x - 1, x + 2):
         for j in range(y - 1, y + 2):
@@ -100,7 +115,7 @@ def oppChoice(state, fline, walls):
             nc = h_opp(newS, fline, walls)
             if nc > cost:
                 cost = nc
-                choice = (i,j)
+                choice = (i, j)
     return choice
 
 
@@ -119,12 +134,9 @@ def LDabSearch(state, fline, walls, d, a, b, mx):
                 newS = ((i, j), (u, v))
                 cost = max(cost, LDabSearch(newS, fline, walls, d - 1, a, b, False))
                 if cost >= b:
-                    print ("AB PRUNE")
                     return cost
                 else:
                     a = max(a, cost)
-        # print ("opp  ")
-        # print (cost)
         return cost
     else:
         cost = infinity
@@ -373,6 +385,7 @@ def listfl(a):
             res.append((x3, y1 + 1))
     return res
 
+
 def h_opp(state, fline, walls):
     """
     The first time this function is called, it will use optimized breath first search to find the cost for all the
@@ -432,7 +445,8 @@ def h_opp(state, fline, walls):
         # check if the slowest stop point land on the fline
         # if yes, significantly reduce the return cost
         if li.count((ssx, ssy)) > 0:
-            return (-100) * (grid[x][y] + math.sqrt(ssu ** 2 + ssv ** 2))
+            penalty -= sd / 4.0
+            # return (-100) * (grid[x][y] + math.sqrt(ssu ** 2 + ssv ** 2))
         # check if the slowest stopping x or y point is on the fline and reduce the return cost
         elif li.count((h1, ssy)) > 0 or li.count((h2, ssy)) > 0 or li.count((ssx, w1)) > 0 or li.count((ssx, w2)) > 0:
             penalty -= sd / 10.0
